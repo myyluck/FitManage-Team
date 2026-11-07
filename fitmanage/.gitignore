@@ -1,0 +1,6 @@
+# Mengabaikan folder kompilasi NetBeans
+build/
+nbproject/private/
+
+# Mengabaikan file class mentah
+*.class
