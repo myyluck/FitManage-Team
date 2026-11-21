@@ -391,15 +391,11 @@ public class Dashboard extends javax.swing.JFrame {
         return data;
     }
 
-    private JPanel createRiwayatPresensiPanel() {
+   private JPanel createRiwayatPresensiPanel() {
         return createGenericPage(
             "Riwayat Presensi", "Pantau catatan kehadiran member dan trainer secara real-time.",
-            new String[]{"No", "ID Member", "Nama Lengkap", "Tipe", "Waktu Masuk", "Durasi Latihan"},
-            new Object[][]{
-                {"1", "MEM-001", "Budi Santoso", "Reguler", "05/11/2024 13:00", "1j 30m"},
-                {"2", "MEM-002", "Andi Wijaya", "VIP", "05/11/2024 14:15", "45m"},
-                {"3", "MEM-007", "Ayu Lestari", "VIP", "05/11/2024 16:00", "2j 10m"}
-            },
+            new String[]{"No", "Nama", "ID Member", "Tipe Member", "Waktu Check-In", "Status"},
+            loadDataCheckInDariDB(),
             "Export Laporan"
         );
     }
@@ -545,6 +541,50 @@ public class Dashboard extends javax.swing.JFrame {
 
         return panel;
     }
+    
+    private void aktifkanSearchTabel(Container page) {
+        JTable table = findTable(page);
+        JTextField txtSearch = findTextField(page);
+        JButton btnSearch = findButton(page, "Cari");
+
+        if (table == null || txtSearch == null) return;
+
+        javax.swing.table.TableRowSorter<javax.swing.table.TableModel> sorter =
+                new javax.swing.table.TableRowSorter<>(table.getModel());
+        table.setRowSorter(sorter);
+
+        Runnable filterAksi = () -> {
+            String keyword = txtSearch.getText().trim();
+            if (keyword.isEmpty()) {
+                sorter.setRowFilter(null);
+            } else {
+                sorter.setRowFilter(javax.swing.RowFilter.regexFilter(
+                        "(?i)" + java.util.regex.Pattern.quote(keyword)
+                ));
+            }
+        };
+
+        if (btnSearch != null) {
+            btnSearch.addActionListener(e -> filterAksi.run());
+        }
+        txtSearch.addActionListener(e -> filterAksi.run());
+        txtSearch.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            @Override
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                filterAksi.run();
+            }
+
+            @Override
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                filterAksi.run();
+            }
+
+            @Override
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                filterAksi.run();
+            }
+        });
+    }
 
     private void addMetricCard(JPanel parent, JPanel card, int index, double weight) {
         card.setPreferredSize(new Dimension(0, card.getPreferredSize().height));
@@ -668,6 +708,11 @@ public class Dashboard extends javax.swing.JFrame {
         if (btnTambahDiDataMember != null) {
             btnTambahDiDataMember.addActionListener(e -> openAddMemberDialog());
         }
+        
+        aktifkanSearchTabel(kelasPage);
+        aktifkanSearchTabel(trainerPage);
+        aktifkanSearchTabel(paketPage);
+        aktifkanSearchTabel(presensiPage);
 
         // ==========================================
         // TOMBOL EDIT MEMBER (BUKA POP-UP EDIT)
@@ -813,6 +858,53 @@ public class Dashboard extends javax.swing.JFrame {
                 Object[][] dataTrxBaru = loadDataTransaksi();
                 for (Object[] baris : dataTrxBaru) {
                     paketModel.addRow(baris);
+                }
+            });
+        }
+        
+        // ==========================================
+        // TOMBOL EXPORT LAPORAN (RIWAYAT PRESENSI)
+        // ==========================================
+        JButton btnExportLaporan = findButton(presensiPage, "Export Laporan");
+        if (btnExportLaporan != null) {
+            btnExportLaporan.addActionListener(e -> {
+                String[] opsi = {"Excel (.xlsx)", "CSV (.csv)", "HTML / PDF (.html)"};
+                int pilih = JOptionPane.showOptionDialog(
+                        this,
+                        "Pilih format file laporan presensi:",
+                        "Export Laporan",
+                        JOptionPane.DEFAULT_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null, opsi, opsi[0]
+                );
+                if (pilih < 0) return;
+
+                String ekstensi = (pilih == 0) ? ".xlsx" : (pilih == 1) ? ".csv" : ".html";
+                JFileChooser chooser = new JFileChooser();
+                chooser.setDialogTitle("Simpan Laporan Presensi");
+                chooser.setSelectedFile(new java.io.File("Laporan_Presensi_FitManage" + ekstensi));
+
+                if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    java.io.File file = chooser.getSelectedFile();
+                    if (!file.getName().toLowerCase().endsWith(ekstensi)) {
+                        file = new java.io.File(file.getAbsolutePath() + ekstensi);
+                    }
+                    try {
+                        if (pilih == 0) {
+                            ReportExporter.tulisXlsx(file, "Laporan Riwayat Presensi", presensiModel);
+                        } else if (pilih == 1) {
+                            ReportExporter.tulisCsv(file, presensiModel);
+                        } else {
+                            ReportExporter.tulisHtml(file, "Laporan Riwayat Presensi", presensiModel);
+                        }
+                        JOptionPane.showMessageDialog(this,
+                                "Laporan berhasil disimpan ke:\n" + file.getAbsolutePath(),
+                                "Export Berhasil", JOptionPane.INFORMATION_MESSAGE);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(this,
+                                "Gagal export laporan: " + ex.getMessage(),
+                                "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 }
             });
         }
