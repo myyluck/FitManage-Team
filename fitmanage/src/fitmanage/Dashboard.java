@@ -992,9 +992,9 @@ public class Dashboard extends javax.swing.JFrame {
          java.sql.ResultSet rs = stmt.executeQuery(query)) {
         
         int nomor = 1;
-        // Formatter biar jamnya kelihatan rapi (contoh: 11 Nov 2026, 15:21)
-        java.time.format.DateTimeFormatter formatter = 
-            java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, HH:mm", java.util.Locale.forLanguageTag("id-ID"));
+// Formatter seragam (contoh: 21/11/2026 21:43)
+java.time.format.DateTimeFormatter formatter = 
+    java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
         while (rs.next()) {
             String nama = rs.getString("nama");
