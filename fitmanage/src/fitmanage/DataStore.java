@@ -103,15 +103,34 @@ public class DataStore {
     // ---------------------------------------------------------------
     // Member
     // ---------------------------------------------------------------
-    public String generateId() {
+   public String generateId() {
         int max = 0;
+        // 1. Cek dari daftar aktif di memori
         for (Member m : members) {
             try {
                 max = Math.max(max, Integer.parseInt(m.getIdMember().substring(4)));
             } catch (RuntimeException ignored) {
-                // format ID tidak standar, lewati
             }
         }
+
+        // 2. Cek langsung ke tabel member Supabase (termasuk yang Nonaktif/soft-delete)
+        String sql = "SELECT id FROM member WHERE id LIKE 'MEM-%'";
+        try (java.sql.Connection conn = fitmanage.dao.KoneksiDB.sambungDB();
+             java.sql.Statement stmt = conn.createStatement();
+             java.sql.ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                String id = rs.getString("id");
+                if (id != null && id.length() > 4) {
+                    try {
+                        max = Math.max(max, Integer.parseInt(id.substring(4)));
+                    } catch (RuntimeException ignored) {
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("[Error] Gagal cek ID terakhir dari Supabase: " + e.getMessage());
+        }
+
         return String.format("MEM-%03d", max + 1);
     }
 
@@ -476,5 +495,67 @@ public class DataStore {
 
     public List<Transaksi> getSemuaTransaksi() {
         return new ArrayList<>(daftarTransaksi);
+    }
+    
+    // ---------------------------------------------------------------
+    // Data Grafik & Statistik Dashboard (untuk LineChartPanel & PieChartPanel)
+    // ---------------------------------------------------------------
+    public void addChangeListener(Runnable callback) {
+        addListener(new Listener() {
+            @Override public void onMemberAdded(Member member) { callback.run(); }
+            @Override public void onMemberUpdated() { callback.run(); }
+            @Override public void onCheckIn(Presensi presensi) { callback.run(); }
+        });
+    }
+
+    public int[] getKunjunganBulanan() {
+        int[] data = new int[12];
+        for (Presensi p : presensi) {
+            if (p.getWaktuMasuk() != null) {
+                data[p.getWaktuMasuk().getMonthValue() - 1]++;
+            }
+        }
+        return data;
+    }
+
+    public int[] getPendaftaranBulanan() {
+        int[] data = new int[12];
+        for (Member m : members) {
+            if (m.getTanggalDaftar() != null) {
+                data[m.getTanggalDaftar().getMonthValue() - 1]++;
+            }
+        }
+        return data;
+    }
+
+    public int getCheckInRegulerHariIni() {
+        LocalDate hariIni = LocalDate.now();
+        int count = 0;
+        for (Presensi p : presensi) {
+            if (p.getWaktuMasuk() != null && p.getWaktuMasuk().toLocalDate().equals(hariIni)) {
+                if (!isMemberVip(p.getIdMember())) count++;
+            }
+        }
+        return count;
+    }
+
+    public int getCheckInVipHariIni() {
+        LocalDate hariIni = LocalDate.now();
+        int count = 0;
+        for (Presensi p : presensi) {
+            if (p.getWaktuMasuk() != null && p.getWaktuMasuk().toLocalDate().equals(hariIni)) {
+                if (isMemberVip(p.getIdMember())) count++;
+            }
+        }
+        return count;
+    }
+
+    private boolean isMemberVip(String idMember) {
+        for (Member m : members) {
+            if (m.getIdMember().equals(idMember)) {
+                return (m instanceof MemberVIP) || (m instanceof PersonalTrainer);
+            }
+        }
+        return false;
     }
 }

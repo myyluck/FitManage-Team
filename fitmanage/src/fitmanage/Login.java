@@ -10,8 +10,6 @@ import java.util.Arrays;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 
-// Catatan: memakai class RoundedPanel yang ada di Dashboard.java (satu package).
-
 public class Login extends JFrame {
 
     private static final Color NAVY  = new Color(10, 25, 60);
@@ -40,14 +38,14 @@ public class Login extends JFrame {
         root.add(buildBrandPanel(), BorderLayout.WEST);
         root.add(buildFormPanel(), BorderLayout.CENTER);
 
-        getRootPane().setDefaultButton(btnLogin); // tekan Enter = klik Login
+        getRootPane().setDefaultButton(btnLogin);
         pack();
-        setLocationRelativeTo(null);              // tampil di tengah layar
+        setLocationRelativeTo(null);
         SwingUtilities.invokeLater(() -> txtUsername.requestFocusInWindow());
     }
 
     // =========================================================================
-    // PANEL KIRI: BRANDING
+    // PANEL KIRI: BRANDING (UI BARU TEMAN)
     // =========================================================================
     private JPanel buildBrandPanel() {
         BrandPanel brand = new BrandPanel();
@@ -55,23 +53,8 @@ public class Login extends JFrame {
         brand.setLayout(new BoxLayout(brand, BoxLayout.Y_AXIS));
         brand.setBorder(new EmptyBorder(40, 40, 40, 40));
 
-        Dimension logoSize = new Dimension(80, 80);
-        RoundedPanel logoBox = new RoundedPanel(28, new Color(255, 255, 255, 40));
-        logoBox.setLayout(new BorderLayout());
-        logoBox.setPreferredSize(logoSize);
-        logoBox.setMinimumSize(logoSize);
-        logoBox.setMaximumSize(logoSize);
-        logoBox.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        JLabel lblLogoIcon = new JLabel("🏋", SwingConstants.CENTER);
-        lblLogoIcon.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 40));
-        lblLogoIcon.setForeground(Color.WHITE);
-        logoBox.add(lblLogoIcon, BorderLayout.CENTER);
-
-        JLabel lblBrand = new JLabel("Fit Manage");
-        lblBrand.setFont(new Font("Segoe UI", Font.BOLD, 34));
-        lblBrand.setForeground(Color.WHITE);
-        lblBrand.setAlignmentX(Component.CENTER_ALIGNMENT);
+        BrandHeader header = new BrandHeader(BrandHeader.Susunan.ATAS, 130, 38f, 5f);
+        header.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         JLabel lblTagline = new JLabel("Sistem Manajemen Gym");
         lblTagline.setFont(new Font("Segoe UI", Font.PLAIN, 15));
@@ -85,16 +68,15 @@ public class Login extends JFrame {
         lblDesc.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         brand.add(Box.createVerticalGlue());
-        brand.add(logoBox);
-        brand.add(Box.createVerticalStrut(20));
-        brand.add(lblBrand);
-        brand.add(Box.createVerticalStrut(6));
+        brand.add(header);
+        brand.add(Box.createVerticalStrut(12));
         brand.add(lblTagline);
         brand.add(Box.createVerticalStrut(26));
         brand.add(lblDesc);
         brand.add(Box.createVerticalGlue());
         return brand;
     }
+
     // =========================================================================
     // PANEL KANAN: FORM LOGIN
     // =========================================================================
@@ -156,10 +138,7 @@ public class Login extends JFrame {
         btnLogin.addActionListener(e -> doLogin());
 
         KeyAdapter clearError = new KeyAdapter() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-                lblError.setText(" ");
-            }
+            @Override public void keyTyped(KeyEvent e) { lblError.setText(" "); }
         };
         txtUsername.addKeyListener(clearError);
         txtPassword.addKeyListener(clearError);
@@ -187,8 +166,9 @@ public class Login extends JFrame {
         c.insets = new Insets(topGap, 0, 0, 0);
         parent.add(comp, c);
     }
+
     // =========================================================================
-    // LOGIKA LOGIN (DELEGASI KE ADMIN DAO)
+    // LOGIKA LOGIN (SUPABASE VIA ADMIN DAO)
     // =========================================================================
     private void doLogin() {
         String username = txtUsername.getText().trim();
@@ -214,7 +194,7 @@ public class Login extends JFrame {
                     "Error Koneksi Database",
                     JOptionPane.ERROR_MESSAGE);
         } finally {
-            Arrays.fill(password, '\0'); // hapus password dari memori
+            Arrays.fill(password, '\0');
         }
     }
 
@@ -231,9 +211,6 @@ public class Login extends JFrame {
         new Dashboard().setVisible(true);
     }
 
-    // =========================================================================
-    // PANEL BRANDING DENGAN BACKGROUND GRADIENT
-    // =========================================================================
     private static class BrandPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
@@ -249,9 +226,7 @@ public class Login extends JFrame {
             g2.dispose();
         }
     }
-    // =========================================================================
-    // TITIK MASUK APLIKASI
-    // =========================================================================
+
     public static void main(String[] args) {
         try {
             System.setProperty("flatlaf.useWindowDecorations", "true");
@@ -261,4 +236,4 @@ public class Login extends JFrame {
         }
         EventQueue.invokeLater(() -> new Login().setVisible(true));
     }
-}               
+}
