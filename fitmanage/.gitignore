@@ -4,3 +4,4 @@ nbproject/private/
 
 # Mengabaikan file class mentah
 *.class
+**/KoneksiDB.java 

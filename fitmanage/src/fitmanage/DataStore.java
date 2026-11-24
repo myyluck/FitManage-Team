@@ -60,9 +60,9 @@ public class DataStore {
 
         try {
             members.addAll(memberDAO.getAll());
-            presensi.addAll(presensiDAO.getHariIni(members));
+            presensi.addAll(presensiDAO.getAll(members));
             System.out.println("[Sistem] Berhasil sinkronisasi " + members.size() + " member & "
-                    + presensi.size() + " data presensi hari ini dari Supabase!");
+                    + presensi.size() + " total riwayat presensi dari Supabase!");
         } catch (SQLException e) {
             System.err.println("[Error] Gagal narik data dari Supabase: " + e.getMessage());
         }
